@@ -16,13 +16,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-       <Button
-           android:layout_below="@+id/edittext"
-           android:layout_width="wrap_content"
-           android:layout_height="wrap_content"
-           android:layout_centerHorizontal="true"
-           android:text="My darling, please don't cry!"
-           android:onClick="brokenFunction"
-        />
+    <Button
+       android:layout_below="@+id/edittext"
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       android:layout_centerHorizontal="true"
+       android:text="My darling, please don't cry!"
+       android:onClick="brokenFunction"
+    />
 
 </RelativeLayout>

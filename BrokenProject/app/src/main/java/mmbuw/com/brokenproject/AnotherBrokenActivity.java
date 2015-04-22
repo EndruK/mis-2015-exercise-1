@@ -2,10 +2,16 @@ package mmbuw.com.brokenproject;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.content.Context;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -17,22 +23,24 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import mmbuw.com.brokenproject.R;
-
 public class AnotherBrokenActivity extends Activity {
+    private String message;
 
+    private EditText url;
+    private TextView myTextView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_another_broken);
 
         Intent intent = getIntent();
-        String message = intent.getStringExtra(BrokenActivity.EXTRA_MESSAGE);
+        message = intent.getStringExtra(BrokenActivity.EXTRA_MESSAGE);
+        url = (EditText)findViewById(R.id.edittext2);
+        myTextView = (TextView) findViewById(R.id.myTextView);
         //What happens here? What is this? It feels like this is wrong.
         //Maybe the weird programmer who wrote this forgot to do something?
 
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -63,25 +71,64 @@ public class AnotherBrokenActivity extends Activity {
         //Below, you find a staring point for your HTTP Requests - this code is in the wrong place and lacks the allowance to do what it wants
         //It will crash if you just un-comment it.
 
-        /*
-        Beginning of helper code for HTTP Request.
 
-        HttpClient client = new DefaultHttpClient();
-        HttpResponse response = client.execute(new HttpGet("http://lmgtfy.com/?q=android+ansync+task"));
-        StatusLine status = response.getStatusLine();
-        if (status.getStatusCode() == HttpStatus.SC_OK){
-            ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-            response.getEntity().writeTo(outStream);
-            String responseAsString = outStream.toString();
-             System.out.println("Response string: "+responseAsString);
-        }else {
-            //Well, this didn't work.
-            response.getEntity().getContent().close();
-            throw new IOException(status.getReasonPhrase());
+
+        // Gets the URL from the UI's text field.
+        String stringUrl = url.getText().toString();
+
+        System.out.println(stringUrl);
+        ConnectivityManager connMgr = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        if (networkInfo != null && networkInfo.isConnected()) {
+
+
+            WebHandler handler = new WebHandler();
+            String result = "";
+            try {
+                result = handler.execute(stringUrl).get();
+            } catch(Exception e) {
+                result = "error";
+            }
+            myTextView.setText(result);
+
+        } else {
+            myTextView.setText("No network connection available.");
         }
 
-          End of helper code!
 
-                  */
+    }
+    private class WebHandler extends AsyncTask<String, Void, String> {
+
+        @Override
+        public String doInBackground(String... urls) {
+            try {
+                return htmlConnector(urls[0]);
+            } catch(IOException e) {
+                return "Unable to retrieve web page. URL may be invalid.";
+            }
+
+        }
+
+        public String htmlConnector(String urlIn) throws IOException {
+            //Beginning of helper code for HTTP Request.
+
+            HttpClient client = new DefaultHttpClient();
+            HttpResponse response = client.execute(new HttpGet(urlIn));
+            StatusLine status = response.getStatusLine();
+            if (status.getStatusCode() == HttpStatus.SC_OK) {
+                ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+                response.getEntity().writeTo(outStream);
+                String responseAsString = outStream.toString();
+                //System.out.println("Response string: " + responseAsString);
+                return responseAsString;
+            } else {
+                //Well, this didn't work.
+                response.getEntity().getContent().close();
+                throw new IOException(status.getReasonPhrase());
+
+            }
+            //End of helper code!
+        }
     }
 }
