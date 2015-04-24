@@ -9,9 +9,12 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.EditText;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.content.Context;
+import android.widget.Toast;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -75,22 +78,38 @@ public class AnotherBrokenActivity extends Activity {
 
         // Gets the URL from the UI's text field.
         String stringUrl = url.getText().toString();
+        if(!stringUrl.startsWith("http://")) {
+            stringUrl = "http://" + stringUrl;
+        }
 
         System.out.println(stringUrl);
         ConnectivityManager connMgr = (ConnectivityManager)
                 getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
         if (networkInfo != null && networkInfo.isConnected()) {
-
-
             WebHandler handler = new WebHandler();
             String result = "";
             try {
                 result = handler.execute(stringUrl).get();
+                if(result.startsWith("Error")) {
+                    Toast toast = Toast.makeText(getApplicationContext(),result,Toast.LENGTH_LONG);
+                    toast.show();
+                }
+                else {
+                    RadioButton rb = (RadioButton) findViewById(R.id.radioButton1);
+                    if(!rb.isChecked()) {
+                        myTextView.setText(result);
+                    }
+                    else {
+                        WebView webview = new WebView(this);
+                        setContentView(webview);
+                        webview.loadUrl(stringUrl);
+                    }
+                }
             } catch(Exception e) {
                 result = "error";
+                e.printStackTrace();
             }
-            myTextView.setText(result);
 
         } else {
             myTextView.setText("No network connection available.");
@@ -103,30 +122,33 @@ public class AnotherBrokenActivity extends Activity {
         @Override
         public String doInBackground(String... urls) {
             try {
-                return htmlConnector(urls[0]);
+                return httpConnector(urls[0]);
             } catch(IOException e) {
-                return "Unable to retrieve web page. URL may be invalid.";
+                //return "Unable to retrieve web page. URL may be invalid.";
+                return e.getMessage();
             }
 
         }
-
-        public String htmlConnector(String urlIn) throws IOException {
+//bonusaufgabe webview benutzen
+        public String httpConnector(String urlIn) throws IOException {
             //Beginning of helper code for HTTP Request.
 
             HttpClient client = new DefaultHttpClient();
             HttpResponse response = client.execute(new HttpGet(urlIn));
             StatusLine status = response.getStatusLine();
-            if (status.getStatusCode() == HttpStatus.SC_OK) {
+            System.out.println(status.toString());
+            if (status.getStatusCode() == HttpStatus.SC_OK) { //200
                 ByteArrayOutputStream outStream = new ByteArrayOutputStream();
                 response.getEntity().writeTo(outStream);
                 String responseAsString = outStream.toString();
                 //System.out.println("Response string: " + responseAsString);
                 return responseAsString;
-            } else {
+            }
+            else {
                 //Well, this didn't work.
                 response.getEntity().getContent().close();
-                throw new IOException(status.getReasonPhrase());
-
+                String test = "Error: " + Integer.toString(status.getStatusCode())+ " " + status.getReasonPhrase();
+                throw new IOException(test);
             }
             //End of helper code!
         }
